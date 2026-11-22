@@ -64,6 +64,8 @@ a{color:inherit}
 .btn svg{width:15px;height:15px;flex:none}
 .sidefoot{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .datablock{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+body:not(.lad) .datablock .side-btns,body:not(.lad) #bkInfo{display:none!important}
+.bkcard{margin-bottom:14px}.bkcard h2{margin:0 0 2px;font-size:17px}.bkstat .due{color:var(--z3);font-weight:600}
 .filebox{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 .filebox b{color:var(--ink);font-weight:600;overflow-wrap:anywhere}
 .filebox .row{display:flex;gap:6px;flex-wrap:wrap}
@@ -515,7 +517,7 @@ const ALL_SECTIONS = [
          {k:"prio",l:"Priorität",t:"sel",o:["","niedrig","mittel","hoch"]},{k:"mass",l:"Maßnahme",ph:"Elektriker beauftragen"},{k:"zustand",l:"Zustand",t:"z"}]}
 ];
 /* Versionsstempel – wird vom Build-Skript (build-windows.ps1) bei jedem Stand auf Datum und Uhrzeit gesetzt */
-const FMS_VERSION="22.11.2026, 15:16";
+const FMS_VERSION="22.11.2026, 15:36";
 const MODE = window.APP_MODE||"begehung", LAD_ONLY = MODE==="leiter";
 const APP_ID = LAD_ONLY?"leiterpruefung":"begehung", APP_LABEL = LAD_ONLY?"Leiterprüfung":"FMS", APP_FILE = LAD_ONLY?"Leiterpruefung":"FMS";
 const SECTIONS = LAD_ONLY?ALL_SECTIONS.filter(s=>s.group==="leiter").map(s=>{const cols=s.cols.filter(c=>c.k!=="ort");
@@ -733,12 +735,12 @@ function histHTML(){
       :`<div class="empty">${C.historie.map.size?"Keine Vorgänge für diese Auswahl.":"Noch keine Vorgänge aufgezeichnet. Ab jetzt wird jede Änderung hier festgehalten."}</div>`}
   </div>`;
 }
-function histPageHTML(){return `<section class="modcard"><div class="mhead"><div><h1>Historie</h1><p class="note">Alle Vorgänge werden automatisch aufgezeichnet. Mehrere Änderungen am selben Eintrag innerhalb von ${HIST_EDIT_MIN} Minuten erscheinen als ein Vorgang.</p></div>
+function histPageHTML(){return `${bkCardHTML()}<section class="modcard"><div class="mhead"><div><h1>Historie</h1><p class="note">Alle Vorgänge werden automatisch aufgezeichnet. Mehrere Änderungen am selben Eintrag innerhalb von ${HIST_EDIT_MIN} Minuten erscheinen als ein Vorgang.</p></div>
   <div class="actions"><button class="btn" type="button" data-hist="pdf">PDF</button><button class="btn" type="button" data-hist="csv">CSV-Export</button></div></div>${histHTML()}</section>`}
 function openHistDlg(){histDlg=true;$("#imp").hidden=false;renderHist()}
 function renderHist(){
   if(histDlg){$("#imp").innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="hsT" style="max-width:1000px"><div class="dlg-h"><div><h2 id="hsT">Historie</h2><p>Alle Vorgänge werden automatisch aufgezeichnet. Gelöschte Einträge lassen sich hier wiederherstellen.</p></div>
-    <button class="x" type="button" data-hist="close" aria-label="Schließen">×</button></div><div class="dlg-b">${histHTML()}</div>
+    <button class="x" type="button" data-hist="close" aria-label="Schließen">×</button></div><div class="dlg-b">${bkCardHTML()}${histHTML()}</div>
     <div class="dlg-f"><span></span><div class="actions"><button class="btn" type="button" data-hist="pdf">PDF</button><button class="btn" type="button" data-hist="csv">CSV-Export</button><button class="btn pri" type="button" data-hist="close">Schließen</button></div></div></div>`;return}
   if(typeof view!=="undefined"&&view==="historie"&&typeof renderMod==="function")renderMod();
 }
@@ -954,12 +956,27 @@ function bkAge(){return bkAt?Math.floor((Date.now()-bkAt)/864e5):null}
 const BK_WHERE=PWA?"zum Beispiel in iCloud Drive":"zum Beispiel auf einem USB-Stick oder Netzlaufwerk";
 function bkDue(){return OFFLINE&&mode==="local"&&objs.size>0&&!dirReady()&&(bkAge()==null||bkAge()>=BK_WARN_DAYS)}
 function bkText(){const a=bkAge();return a==null?"Noch keine Sicherung gespeichert":a===0?"Letzte Sicherung: heute":a===1?"Letzte Sicherung: gestern":`Letzte Sicherung: vor ${a} Tagen`}
-function renderBkInfo(){const el=$("#bkInfo");if(!el)return;if(mode!=="local"){el.hidden=true;return}
+/* Datensicherung steht in der Historie (Karte „Datensicherung“); die Seitenleiste zeigt sie nur im Leitern-Modus */
+function bkStatusHTML(){
+  if(SERVER&&mode==="db"){const a=sbLast?Math.floor((Date.now()-sbLast)/864e5):null,due=sbLast===0||(sbLast&&Date.now()-sbLast>(SB_DAYS+1)*864e5);
+    return `<span class="${due?"due":""}">${sbLast==null?"Server-Sicherung wird geprüft …":!sbLast?"Noch keine Server-Sicherung":"Letzte Server-Sicherung: "+(a===0?"heute":a===1?"gestern":`vor ${a} Tagen`)}</span>`}
+  return mode==="local"?`<span class="${bkDue()?"due":""}">${bkText()}</span>`:""}
+function bkCardHTML(){if(LAD_ONLY)return "";const srv=SERVER&&mode==="db",bs=[];
+  if(srv&&can("restore"))bs.push(`<button class="btn pri" type="button" data-sbk="open">Server-Sicherungen</button>`);
+  if(canSave()&&(!userMode()||can("restore")||!srv))bs.push(`<button class="btn" type="button" data-bk="now">Sicherung speichern</button>`);
+  if(can("backupImport"))bs.push(`<button class="btn" type="button" data-bkimp="1">Sicherung einlesen</button>`);
+  if(mode==="local")bs.push(`<button class="btn" type="button" data-rp="open">Wiederherstellungspunkte</button>`);
+  if(!bs.length)return "";
+  return `<section class="modcard bkcard"><div class="mhead"><div><h2>Datensicherung</h2><p class="note bkstat">${bkStatusHTML()}</p></div><div class="actions">${bs.join("")}</div></div>
+    <p class="note" style="margin:0">${srv?"FMS sichert alle Einträge einmal pro Woche automatisch auf dem Server. <b>Sicherung speichern</b> legt zusätzlich eine Kopie als Datei ab (z. B. iCloud Drive oder Netzlaufwerk). <b>Sicherung einlesen</b> übernimmt eine solche Datei.":
+      `<b>Sicherung speichern</b> legt alle Daten mit Fotos als Datei ab, ${BK_WHERE}. <b>Sicherung einlesen</b> übernimmt eine Sicherung oder die Daten eines anderen Geräts. Wiederherstellungspunkte entstehen täglich automatisch auf diesem ${PWA?"Gerät":"PC"}.`}</p></section>`}
+function renderBkInfo(){document.querySelectorAll(".bkstat").forEach(n=>n.innerHTML=bkStatusHTML());const el=$("#bkInfo");if(!el)return;
+  if(mode!=="local"){el.hidden=true;return}
   el.hidden=false;el.className="bkinfo"+(bkDue()?" due":"");
   el.innerHTML=`<span>${bkText()}</span><button class="btn sm ghost" type="button" data-rp="open">Wiederherstellungspunkte</button>`}
 function bkBannerHTML(){if(!bkDue())return "";const a=bkAge();
   return `<div class="bkbanner" role="status"><span><b>${a==null?"Noch keine Datensicherung.":`Letzte Datensicherung vor ${a} Tagen.`}</b> Die Daten liegen nur auf diesem ${PWA?"Gerät":"PC"}. Speichere eine Sicherung, ${BK_WHERE}.</span><button class="btn pri sm" type="button" data-bk="now">Jetzt sichern</button></div>`}
-document.addEventListener("click",e=>{if(e.target.closest("[data-bk]"))$("#bkExp").click();else if(e.target.closest('[data-rp="open"]'))openRp()});
+document.addEventListener("click",e=>{if(e.target.closest("[data-bk]"))$("#bkExp").click();else if(e.target.closest("[data-bkimp]"))$("#bkImp").click();else if(e.target.closest('[data-rp="open"]'))openRp();else if(e.target.closest('[data-sbk="open"]'))sbOpen()});
 
 /* ---------- Wiederherstellungspunkte (automatische Kopien auf dem Gerät, ohne Fotos) ---------- */
 const RP_PREFIX="rp:", RP_KEEP=10;
@@ -995,6 +1012,50 @@ async function rpClick(e){const b=e.target.closest("[data-rp]");if(!b||!rpDlg||r
     rpDlg.busy=true;renderRp();await rpMake("vor dem Zurücksetzen");replaceAll(d);saveLocal();
     histAdd({act:"zurückgesetzt",area:"System",label:"Alle Daten auf "+label,note:""});
     rpDlg=null;closeImport();setSave("ok","Zurückgesetzt auf "+label)}}
+
+/* ---------- Server-Sicherungen (nur Server-Version) ----------
+   Einmal pro Woche legt FMS beim ersten Öffnen durch Verwaltung/Admin eine Sicherung aller Einträge
+   im Server-Speicher ab (Ordner „sicherungen“). Fotos/PDFs liegen dort ohnehin. Die letzten SB_KEEP bleiben. */
+const SB_DIR="sicherungen",SB_KEEP=12,SB_DAYS=7,SB_WHY={auto:"automatisch (wöchentlich)",manuell:"von Hand erstellt",vorher:"vor dem Zurückspielen"};
+let sbLast=null,sbBusy=false,sbDlg=null;
+function sbName(why){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${APP_FILE}-Sicherung_${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}_${why}.json`}
+function sbParse(n){const m=/_(\d{4})-(\d\d)-(\d\d)_(\d\d)(\d\d)(\d\d)_(\w+)\.json$/.exec(n);return m?{at:new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5],+m[6]).getTime(),why:SB_WHY[m[7]]||m[7]}:null}
+async function sbList(){const {data,error}=await sb.storage.from("fms").list(SB_DIR,{limit:500,sortBy:{column:"name",order:"desc"}});if(error)throw error;
+  const items=(data||[]).map(f=>({name:f.name,size:(f.metadata&&f.metadata.size)||0,...sbParse(f.name)})).filter(f=>f.at).sort((a,b)=>b.at-a.at);
+  sbLast=items[0]?items[0].at:0;return items}
+async function sbMake(why){const d=snapshotData();d.srvBy=meName();d.srvReason=SB_WHY[why];
+  const {error}=await sb.storage.from("fms").upload(SB_DIR+"/"+sbName(why),new Blob([JSON.stringify(d)],{type:"application/json"}),{contentType:"application/json",upsert:false});if(error)throw error;
+  const items=await sbList(),old=items.slice(SB_KEEP);if(old.length)await sb.storage.from("fms").remove(old.map(f=>SB_DIR+"/"+f.name));renderBkInfo();return items}
+async function sbAuto(){if(!SERVER||mode!=="db"||sbBusy||!meU()||!can("restore")||!objs.size)return;sbBusy=true;
+  try{await sbList();if(!sbLast||Date.now()-sbLast>=SB_DAYS*864e5){await sbMake("auto");setSave("ok","Wöchentliche Server-Sicherung erstellt")}}catch(e){}
+  sbBusy=false;renderBkInfo()}
+function sbInfoHTML(){const a=sbLast?Math.floor((Date.now()-sbLast)/864e5):null;
+  return `<span>${sbLast==null?"Server-Sicherung wird geprüft …":!sbLast?"Noch keine Server-Sicherung":"Server-Sicherung: "+(a===0?"heute":a===1?"gestern":`vor ${a} Tagen`)}</span><button class="btn sm ghost" type="button" data-sbk="open">Server-Sicherungen</button>`}
+async function sbOpen(){if(!can("restore"))return denied("Server-Sicherungen verwalten dürfen nur Verwaltung und Administratoren.");
+  sbDlg={items:null,busy:false,msg:""};$("#imp").hidden=false;sbRender();
+  try{const it=await sbList();if(sbDlg){sbDlg.items=it;sbRender()}}catch(e){if(sbDlg){sbDlg.items=[];sbDlg.msg="err:Liste nicht abrufbar – "+errMsg(e);sbRender()}}}
+function sbRender(){const r=sbDlg;if(!r)return;const sz=n=>n>=1048576?(n/1048576).toFixed(1).replace(".",",")+" MB":Math.max(1,Math.round(n/1024))+" KB",dis=r.busy?" disabled":"";
+  $("#imp").innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="sbT" style="max-width:680px">
+    <div class="dlg-h"><div><h2 id="sbT">Server-Sicherungen</h2><p>FMS legt einmal pro Woche automatisch eine Sicherung aller Einträge im Server-Speicher ab. Fotos, Unterschriften und PDFs liegen dort ohnehin. Die letzten ${SB_KEEP} Sicherungen bleiben erhalten.</p></div>
+      <button class="x" type="button" data-sbk="close" aria-label="Schließen">×</button></div>
+    <div class="dlg-b">${r.msg?`<div class="msg ${r.msg.split(":")[0]}">${esc(r.msg.split(/:(.*)/s)[1])}</div>`:""}
+      ${r.items==null?`<p class="note">Wird geladen …</p>`:r.items.length?`<div class="rplist">${r.items.map(it=>`<div class="rprow"><div><b>${new Date(it.at).toLocaleString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</b><small>${esc(it.why)} · ${sz(it.size)}</small></div>
+        <div class="actions"><button class="btn sm" type="button" data-sbk="dl" data-n="${esc(it.name)}"${dis}>Herunterladen</button><button class="btn sm" type="button" data-sbk="merge" data-n="${esc(it.name)}"${dis}>Zurückspielen …</button></div></div>`).join("")}</div>`
+      :`<div class="empty">Noch keine Server-Sicherung vorhanden.</div>`}
+      <p class="note" style="margin:0"><b>Zurückspielen</b> holt Fehlendes und Gelöschtes zurück und behält neuere Änderungen – vorher zeigt FMS, was sich ändert, und sichert den jetzigen Stand. <b>Herunterladen</b> speichert die Datei z. B. in iCloud Drive oder auf einem Netzlaufwerk; jede FMS-Version kann sie mit „Sicherung einlesen“ öffnen.</p>
+      <p class="note" style="margin:0">Diese Sicherungen liegen auf demselben Server wie die Daten. Sie schützen vor Bedienfehlern, nicht vor einem Ausfall des Servers – dafür sorgt die Sicherung des Servers selbst (IT) oder ab und zu eine heruntergeladene Kopie.</p></div>
+    <div class="dlg-f"><span></span><div class="actions"><button class="btn" type="button" data-sbk="now"${dis}>Jetzt sichern</button><button class="btn pri" type="button" data-sbk="close">Schließen</button></div></div></div>`}
+async function sbClick(e){const b=e.target.closest("[data-sbk]");if(!b||!sbDlg)return;const a=b.dataset.sbk;
+  if(a==="close"){if(!sbDlg.busy){sbDlg=null;closeImport()}return}
+  if(sbDlg.busy||a==="open")return;sbDlg.busy=true;sbDlg.msg="busy:Bitte warten …";sbRender();
+  try{if(a==="now"){sbDlg.items=await sbMake("manuell");sbDlg.msg="ok:Sicherung auf dem Server erstellt."}
+    else{const n=b.dataset.n,{data,error}=await sb.storage.from("fms").download(SB_DIR+"/"+n);if(error)throw error;
+      if(a==="dl"){try{await saveFile(n,data,"application/json");sbDlg.msg="ok:Gespeichert: "+n}catch(x){if(!(x&&x.code==="declined"))throw x;sbDlg.msg=""}}
+      else if(a==="merge"){let d=null;try{d=JSON.parse(await data.text())}catch(x){}
+        if(!d||d.app!==APP_ID||!d.objekte)throw new Error("Die Datei ist keine FMS-Sicherung");
+        await sbMake("vorher");sbDlg=null;return openRestore(d,"Server-Sicherung vom "+new Date(sbParse(n).at).toLocaleString("de-DE",{dateStyle:"medium",timeStyle:"short"}))}}}
+  catch(x){if(sbDlg)sbDlg.msg="err:"+errMsg(x)}
+  if(sbDlg){sbDlg.busy=false;sbRender()}}
 
 /* ---------- Abgleich iPad ⇄ PC über eine gemeinsame Datei in iCloud Drive ----------
    PC (Edge/Chrome mit Datenordner in iCloud Drive): liest und schreibt „FMS-Abgleich.json“ automatisch.
@@ -1320,7 +1381,7 @@ const IMP_FIELDS=[
 ];
 let imp={rows:[],head:[],map:{},skipDup:true,msg:"",busy:false};
 function openImport(){imp={rows:[],head:[],map:{},skipDup:true,msg:"",busy:false};$("#imp").hidden=false;renderImport();}
-function closeImport(){scanStop();$("#imp").hidden=true;$("#imp").innerHTML="";restore=null;rpDlg=null;gs=null;lbl=null;syDlg=null;mq=null;ud=null;rv=null;tplState=null;histDlg=false;mailImp=null;termImp=null;if(docDlg){docDlg.pages.forEach(p=>URL.revokeObjectURL(p.url));docDlg=null;renderSheet()}if(recDlg){finishNew();recDlg=null;afterRec();return}if(photo||pr){photo=null;pr=null;renderSheet()}}
+function closeImport(){scanStop();$("#imp").hidden=true;$("#imp").innerHTML="";restore=null;rpDlg=null;sbDlg=null;gs=null;lbl=null;syDlg=null;mq=null;ud=null;rv=null;tplState=null;histDlg=false;mailImp=null;termImp=null;if(docDlg){docDlg.pages.forEach(p=>URL.revokeObjectURL(p.url));docDlg=null;renderSheet()}if(recDlg){finishNew();recDlg=null;afterRec();return}if(photo||pr){photo=null;pr=null;renderSheet()}}
 function guessMap(head){
   const map={},used=new Set();
   IMP_FIELDS.forEach(f=>{const i=head.findIndex((h,ix)=>!used.has(ix)&&f.re.test(String(h).trim()));if(i>=0){map[f.k]=i;used.add(i)}});
@@ -1406,6 +1467,7 @@ function renderImport(){
 $("#imp").addEventListener("click",e=>{
   if(e.target.id==="imp"){if(!(restore&&restore.busy)&&!(rpDlg&&rpDlg.busy)&&!(recDlg&&recDlg.busy)&&!(pr&&pr.view==="new")&&!(docDlg&&(docDlg.pages.length||docDlg.busy)))closeImport();return}
   if(rpDlg&&e.target.closest("[data-rp]"))return rpClick(e);
+  if(sbDlg&&e.target.closest("[data-sbk]"))return sbClick(e);
   if(lbl&&e.target.closest("[data-lb]"))return lblClick(e);
   if(syDlg&&e.target.closest("[data-sy]"))return syClick(e);
   if(mq&&e.target.closest("[data-mq]"))return mqClick(e);
@@ -3747,7 +3809,8 @@ async function startServer(){
   mode="db";col=db.collection("objekte");$("#bkExp").hidden=!canSave();
   col.onSnapshot(applySnapshot);
   COLLS.forEach(n=>{C[n].ref=db.collection(n);C[n].ref.onSnapshot(s=>cApply(n,s))});
-  setTimeout(quartalAuto,8000)}
+  setTimeout(quartalAuto,8000);setTimeout(sbAuto,12000);renderBkInfo();
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")setTimeout(sbAuto,5000)})}
 async function serverUrl(id){const c=signedUrls.get(id);if(c&&c.t>Date.now())return c.u;const {data,error}=await sb.storage.from("fms").createSignedUrl(id,3600);if(error||!data)return null;signedUrls.set(id,{u:data.signedUrl,t:Date.now()+50*60000});return data.signedUrl}
 async function serverLogout(){try{await sb.auth.signOut()}catch(e){}location.reload()}
 

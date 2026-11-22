@@ -1,6 +1,6 @@
 # FMS – Bedienungsanleitung
 
-Stand: 22.11.2026, 15:16
+Stand: 22.11.2026, 15:36
 
 FMS ist unser Programm für Liegenschaften, Aufträge, Wartungen und Prüfungen. Es läuft auf dem iPad und am PC, auch ohne Internet. Lies zuerst „Einstieg“ und „Für alle“, danach den Teil zu deiner Rolle.
 
@@ -226,7 +226,16 @@ Wichtig: Erst nach dem Abgleich sehen die anderen, was du angenommen oder erledi
 
 - Das Speichern im gemeinsamen Ordner (Schritt 3) zählt gleichzeitig als Sicherung.
 - Ist die letzte Sicherung älter als 7 Tage, erscheint auf der Übersicht ein Hinweis mit **Jetzt sichern**.
-- Zusätzlich legt FMS täglich einen **Wiederherstellungspunkt** auf dem Gerät an (ohne Fotos). Zurückspielen darf nur Verwaltung oder Administrator: **Liegenschaften** → **Wiederherstellungspunkte**.
+- Alles zur Sicherung steht unter **Historie** in der Karte **Datensicherung**: **Sicherung speichern**, **Sicherung einlesen** und **Wiederherstellungspunkte**.
+- **Sicherung speichern** legt alle Daten mit Fotos als Datei ab. Auf dem iPad: „In Dateien sichern“ → iCloud Drive → FMS. Nicht „Auf meinem iPad“ wählen.
+- Zusätzlich legt FMS täglich einen **Wiederherstellungspunkt** auf dem Gerät an (ohne Fotos). Zurückspielen und Sicherungen einlesen dürfen nur Verwaltung und Administrator.
+
+**Server-Version**
+
+- Abgleichen entfällt: Jede Änderung ist sofort bei allen.
+- FMS legt **einmal pro Woche automatisch** eine Sicherung aller Einträge auf dem Server ab. Die letzten 12 bleiben erhalten.
+- **Historie** → **Server-Sicherungen**: Liste mit Datum. **Jetzt sichern** erstellt sofort eine. **Herunterladen** speichert eine Kopie als Datei. **Zurückspielen …** holt Fehlendes und Gelöschtes zurück; vorher zeigt FMS, was sich ändert, und sichert den jetzigen Stand.
+- Die Server-Sicherungen schützen vor Bedienfehlern. Gegen einen Ausfall des Servers schützt die Sicherung des Servers selbst durch die IT, oder ab und zu eine heruntergeladene Kopie.
 
 ## Häufige Fragen
 
