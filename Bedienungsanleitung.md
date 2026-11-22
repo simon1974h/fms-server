@@ -1,6 +1,6 @@
 # FMS – Bedienungsanleitung
 
-Stand: 22.11.2026, 14:33
+Stand: 22.11.2026, 15:16
 
 FMS ist unser Programm für Liegenschaften, Aufträge, Wartungen und Prüfungen. Es läuft auf dem iPad und am PC, auch ohne Internet. Lies zuerst „Einstieg“ und „Für alle“, danach den Teil zu deiner Rolle.
 

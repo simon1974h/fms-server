@@ -1,4 +1,4 @@
-const CACHE="fms-server-2026-11-22_1433";
+const CACHE="fms-server-2026-11-22_1516";
 const CORE=["./","./index.html","./pdf-lib.min.js","./qrcode.min.js","./jsQR.min.js","./supabase.min.js","./Bedienungsanleitung.html","./manifest.webmanifest","./apple-touch-icon.png","./icon-192.png","./icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

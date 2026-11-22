@@ -515,7 +515,7 @@ const ALL_SECTIONS = [
          {k:"prio",l:"Priorität",t:"sel",o:["","niedrig","mittel","hoch"]},{k:"mass",l:"Maßnahme",ph:"Elektriker beauftragen"},{k:"zustand",l:"Zustand",t:"z"}]}
 ];
 /* Versionsstempel – wird vom Build-Skript (build-windows.ps1) bei jedem Stand auf Datum und Uhrzeit gesetzt */
-const FMS_VERSION="22.11.2026, 14:33";
+const FMS_VERSION="22.11.2026, 15:16";
 const MODE = window.APP_MODE||"begehung", LAD_ONLY = MODE==="leiter";
 const APP_ID = LAD_ONLY?"leiterpruefung":"begehung", APP_LABEL = LAD_ONLY?"Leiterprüfung":"FMS", APP_FILE = LAD_ONLY?"Leiterpruefung":"FMS";
 const SECTIONS = LAD_ONLY?ALL_SECTIONS.filter(s=>s.group==="leiter").map(s=>{const cols=s.cols.filter(c=>c.k!=="ort");
@@ -2394,6 +2394,7 @@ function udClick(e){const b=e.target.closest("[data-ud]");if(!b||!ud)return;cons
     const name=$("#ud-name").value.trim(),pin=$("#ud-pin")?$("#ud-pin").value.trim():"",mail=$("#ud-mail").value.trim().toLowerCase(),rolle=first?"admin":($("#ud-rolle").value||"technik"),aktiv=$("#ud-aktiv")?$("#ud-aktiv").checked:true;
     if(!name){s.msg="err:Bitte einen Namen eintragen.";return renderUsers()}
     if(SERVER&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){s.msg="err:Bitte die E-Mail-Adresse eintragen, mit der sich die Person anmeldet.";return renderUsers()}
+    if(SERVER&&first&&mail!==serverEmail){s.msg=`err:Bei der Ersteinrichtung bitte die E-Mail-Adresse eintragen, mit der du gerade angemeldet bist (${serverEmail}).`;return renderUsers()}
     if(SERVER&&users().some(([k,x])=>k!==id&&x.aktiv!==false&&String(x.email||"").toLowerCase()===mail)){s.msg="err:Diese E-Mail-Adresse ist schon einem Benutzer zugeordnet.";return renderUsers()}
     if(users().some(([k,x])=>k!==id&&x.aktiv!==false&&normQ(x.name)===normQ(name))){s.msg="err:Diesen Namen gibt es schon.";return renderUsers()}
     if(pin&&!/^\d{4,8}$/.test(pin)){s.msg="err:Die PIN muss aus 4 bis 8 Ziffern bestehen.";return renderUsers()}
